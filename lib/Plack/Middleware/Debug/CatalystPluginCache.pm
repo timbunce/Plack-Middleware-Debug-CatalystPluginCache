@@ -1,14 +1,14 @@
 package Plack::Middleware::Debug::CatalystPluginCache;
+
 use 5.008;
 use strict;
 use warnings;
+
 use Plack::Util::Accessor qw(app_class track_miss_locations show_process_stats show_global_stats);
 use Class::Method::Modifiers qw(install_modifier);
 use Text::MicroTemplate qw(encoded_string);
 
 use parent qw(Plack::Middleware::Debug::Base);
-
-our $VERSION = '0.10';
 
 my @stat_keys = qw(cache_get_hit cache_get_miss cache_set cache_remove cache_compute);
 my $track_miss_locations; # fudge, to be visible to method hooks
@@ -33,7 +33,7 @@ sub _install_method_hooks {
 
     # XXX if a backend supports compute then we can't tell what happened,
     # if not, then either cache_get_hit or cache_get_miss+cache_set will also
-    # be incremented. We could XXX
+    # be incremented. We could force explicit get+set calls.
     install_modifier 'Catalyst::Plugin::Cache', 'before', 'cache_compute' => sub {
         my ($c, $key, $code, @meta) = @_;
         my $backend = $c->choose_cache_backend_wrapper( key => $key, @meta );
@@ -84,7 +84,7 @@ sub prepare_app {
         _install_method_hooks() if $INC{'Catalyst/Plugin/Cache.pm'};
     }
     else {
-        warn __PACKAGE__." wil be inefective because Catalyst::Plugin::Cache is not loaded\n";
+        warn __PACKAGE__." will be inefective because Catalyst::Plugin::Cache is not loaded\n";
     }
 
     $self->show_process_stats(1) if not defined $self->show_process_stats;
@@ -292,11 +292,77 @@ __END__
 
 =head1 NAME
 
-Plack::Middleware::Debug::CatalystPluginCache - DBI::Profile panel
+Plack::Middleware::Debug::CatalystPluginCache - Panel for monitoring Catalyst::Plugin::Cache's
+
+=head1 SYNOPSIS
+
+    enable "Debug:CatalystPluginCache";
+
+is equivalent to:
+
+    enable "Debug:CatalystPluginCache",
+        app_class => '...', # Catalyst class name is determined automatically
+        show_process_stats   => 1,
+        show_global_stats    => 0,
+        track_miss_locations => 0;
+
+=head1 DESCRIPTION
+
+=head2 General
+
+The default output consists of a summary of cache statistics, for each of the
+caches configured for L<Catalyst::Plugin::Cache>, for the current request:
+
+    Cache   Get   Miss  Hit%  Set Compute Remove  Backend
+    default 11    10    9.09  11  0       0       Cache::Memcached::libmemcached=HASH(0xa682020)
+
+This becomes more useful as more L<Catalyst::Plugin::Cache> caches are
+configured for different uses. You can then see more fine-grained details of
+how effectively the different caches are being used.
+
+=head2 track_miss_locations
+
+If C<track_miss_locations> is enabled then, for each cache that had one or more
+misses, a summary of the subroutine call paths that encountered the misses is
+displayed:
+
+    Call paths for misses in the default cache:
+    . Catalyst::Plugin::PageCache::Catalyst::Plugin::Cache::Curried::get@106 =>
+    . . Catalyst::Plugin::Static::Simple::Catalyst::Plugin::PageCache::dispatch@76 =>
+    . . . Catalyst::Engine::PSGI::Hello::dispatch@158 =>
+    . . . . Catalyst::Engine::PSGI::(eval)@156 =>
+    . . . . . Catalyst::Catalyst::Engine::PSGI::run@2386 =>
+    ...
+    . . . . . . . misses => 1
+
+Some 'uninteresting' packages are filtered out to aid readability.
+
+=head2 show_process_stats
+
+If C<show_process_stats> is enabled then a summary of the cache statistics is
+shown, like L</General> above, except the stats refer to the lifetime of the
+server process which handled the request. Typically only useful in development
+environments with a single Plack application server process.
+
+=head2 show_global_stats
+
+If C<show_global_stats> is enabled then the cache backend service is queried
+for global stats before and after the request is processed and the differences
+in counts are displayed. For example:
+
+    Cache    Global stats changes during time of request
+    default  bytes: +2, bytes_read: +65915, bytes_written: +1635, cmd_get: +11, cmd_set: +11,
+             curr_items: +1, evictions: +1, get_hits: +1, get_misses: +10, total_connections: +2, total_items: +11
+
+Currently only global stats fromL<Cache::Memcached::libmemcached> based caches
+are supported.  Others could be added easily.  Note that these backend cache
+server stats will obviously be affected by any other clients using the cache
+services. They are most useful in development environments with a dedicated
+backend cache server.
 
 =head1 SEE ALSO
 
-L<Plack::Middleware::Debug> and
-L<Plack::Middleware::Debug::DBITrace>
+L<Plack::Middleware::Debug>,
+L<Cache::Memcached::libmemcached>
 
 =cut

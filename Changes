@@ -2,7 +2,7 @@
 
 Changes - Significant changes to Plack::Middleware::Debug::CatalystPluginCache
 
-=head2 Changes in 0.003
+=head2 Changes in 0.100
 
   Initial release.
 
