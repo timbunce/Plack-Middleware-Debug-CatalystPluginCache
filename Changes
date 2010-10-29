@@ -1,27 +1,9 @@
-Revision history for Plack-Middleware-Debug-CatalystPluginCache
-
-{{$NEXT}}
-
-0.002     2010-10-29 19:28:32 Europe/Dublin
-
-0.001     2010-10-29 18:17:27 Europe/Dublin
-    -
-
 =head1 NAME
 
-Changes - List of significant changes to PostgreSQL::PLPerl::Call
+Changes - Significant changes to Plack::Middleware::Debug::CatalystPluginCache
 
-=head2 Changes in 1.006
+=head2 Changes in 0.003
 
-  Changed SP->foo to PG->foo.
-  Fixed tests.
-  Added documentation on how to enable use in PostgreSQL.
-
-=head2 Changes in 1.005
-
-  Added DBI as prerequisite.
-  Skipped tests if createdb fails (e.g. PostgreSQL not installed)
-        or DBD::Pg isn't available or can't connect.
+  Initial release.
 
 =cut
-
